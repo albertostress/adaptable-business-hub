@@ -1,78 +1,111 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bell, Search, LogOut } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Bell, Settings, LogOut, User, ChevronDown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
 
-interface HeaderProps {
-  user: {
-    name: string;
-    email: string;
-    company: string;
-  };
-}
-
-const Header = ({ user }: HeaderProps) => {
+const Header = () => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const [notifications] = useState([
+    { id: 1, message: "Nova venda cadastrada", time: "2 min atrás" },
+    { id: 2, message: "Cliente João entrou em contato", time: "1 hora atrás" },
+    { id: 3, message: "Relatório mensal pronto", time: "2 horas atrás" }
+  ]);
 
   const handleLogout = () => {
-    localStorage.removeItem('gestor_user');
-    toast({
-      title: "Logout realizado",
-      description: "Até logo!",
-    });
+    logout();
     navigate('/');
   };
 
   const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        {/* Search */}
-        <div className="flex-1 max-w-lg">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Buscar clientes, vendas..."
-              className="pl-10 bg-gray-50 border-gray-200"
-            />
-          </div>
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-semibold text-gray-800">
+            Bem-vindo de volta, {user?.name}!
+          </h1>
         </div>
-
-        {/* Right Side */}
+        
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <Button variant="ghost" size="sm" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs"></span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="relative">
+                <Bell className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>Notificações</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {notifications.map((notification) => (
+                <DropdownMenuItem key={notification.id} className="flex flex-col items-start py-3">
+                  <p className="text-sm font-medium">{notification.message}</p>
+                  <p className="text-xs text-gray-500">{notification.time}</p>
+                </DropdownMenuItem>
+              ))}
+              {notifications.length === 0 && (
+                <DropdownMenuItem>
+                  <p className="text-sm text-gray-500">Nenhuma notificação</p>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* User Menu */}
-          <div className="flex items-center space-x-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-medium text-gray-900">{user.name}</p>
-              <p className="text-xs text-gray-500">{user.company}</p>
-            </div>
-            <Avatar>
-              <AvatarFallback className="bg-blue-600 text-white">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center space-x-2 h-auto p-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.avatar} />
+                  <AvatarFallback className="bg-blue-600 text-white text-sm">
+                    {user?.name ? getInitials(user.name) : 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">{user?.name}</span>
+                  <span className="text-xs text-gray-500 capitalize">{user?.role?.name}</span>
+                </div>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

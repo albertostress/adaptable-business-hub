@@ -1,196 +1,220 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TrendingUp, Mail, Lock, User, Building } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Building2, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    company: ''
-  });
-  
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState("login");
+  const { login, register, isLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    // Simulate API call
-    setTimeout(() => {
-      const userData = {
-        id: '1',
-        name: formData.name || 'Usuário Demo',
-        email: formData.email,
-        company: formData.company || 'Empresa Demo',
-        role: 'admin'
-      };
-      
-      localStorage.setItem('gestor_user', JSON.stringify(userData));
-      
+    if (!loginData.email || !loginData.password) {
       toast({
-        title: isLogin ? "Login realizado!" : "Conta criada com sucesso!",
-        description: "Redirecionando para o dashboard...",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos",
+        variant: "destructive",
       });
-      
-      setLoading(false);
+      return;
+    }
+
+    const success = await login(loginData.email, loginData.password);
+    if (success) {
       navigate('/dashboard');
-    }, 1500);
+    }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registerData.name || !registerData.email || !registerData.password) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const success = await register(registerData.name, registerData.email, registerData.password);
+    if (success) {
+      navigate('/dashboard');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo e Título */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-6">
-            <div className="h-16 w-16 bg-blue-600 rounded-2xl flex items-center justify-center mr-4 shadow-lg">
-              <TrendingUp className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">Gestor</h1>
-              <p className="text-sm text-gray-600 mt-1">CRM Inteligente</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-blue-600 p-3 rounded-xl">
+              <Building2 className="h-8 w-8 text-white" />
             </div>
           </div>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            Gerencie clientes, vendas e relatórios em uma plataforma moderna e intuitiva
+          <h1 className="text-3xl font-bold text-gray-900">Gestor CRM</h1>
+          <p className="text-gray-600">
+            Gerencie seus clientes e vendas de forma inteligente
           </p>
         </div>
 
-        {/* Card de Login */}
-        <Card className="shadow-2xl border-none bg-white/90 backdrop-blur">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              {isLogin ? 'Entrar na sua conta' : 'Criar nova conta'}
-            </CardTitle>
-            <CardDescription className="text-base text-gray-600">
-              {isLogin 
-                ? 'Acesse seu dashboard e transforme seus resultados' 
-                : 'Comece a revolucionar seu negócio hoje'
-              }
+        {/* Auth Card */}
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-xl">Acesse sua conta</CardTitle>
+            <CardDescription>
+              Entre ou crie uma nova conta para continuar
             </CardDescription>
           </CardHeader>
           
-          <CardContent className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {!isLogin && (
-                <>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="login">Entrar</TabsTrigger>
+                <TabsTrigger value="register">Criar Conta</TabsTrigger>
+              </TabsList>
+              
+              {/* Login Tab */}
+              <TabsContent value="login" className="space-y-4">
+                <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nome completo</Label>
+                    <Label htmlFor="email">Email</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
-                        id="name"
-                        name="name"
-                        type="text"
-                        placeholder="Seu nome"
-                        className="pl-10 h-11 border-gray-200 focus:border-blue-500"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        required={!isLogin}
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className="pl-10"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))}
+                        required
                       />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="company" className="text-sm font-medium text-gray-700">Empresa</Label>
+                    <Label htmlFor="password">Senha</Label>
                     <div className="relative">
-                      <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <Input
-                        id="company"
-                        name="company"
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="pl-10 pr-10"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-blue-600 hover:bg-blue-700" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Entrando..." : "Entrar"}
+                  </Button>
+                </form>
+              </TabsContent>
+              
+              {/* Register Tab */}
+              <TabsContent value="register" className="space-y-4">
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="register-name">Nome completo</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="register-name"
                         type="text"
-                        placeholder="Nome da sua empresa"
-                        className="pl-10 h-11 border-gray-200 focus:border-blue-500"
-                        value={formData.company}
-                        onChange={handleInputChange}
+                        placeholder="Seu nome completo"
+                        className="pl-10"
+                        value={registerData.name}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, name: e.target.value }))}
+                        required
                       />
                     </div>
                   </div>
-                </>
-              )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    className="pl-10 h-11 border-gray-200 focus:border-blue-500"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">Senha</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10 h-11 border-gray-200 focus:border-blue-500"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base shadow-lg"
-                disabled={loading}
-              >
-                {loading ? (
-                  "Processando..."
-                ) : (
-                  isLogin ? 'Entrar no Gestor' : 'Criar minha conta'
-                )}
-              </Button>
-            </form>
-            
-            <div className="text-center pt-4 border-t border-gray-100">
-              <p className="text-gray-600 mb-2">
-                {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
-              </p>
-              <Button
-                variant="link"
-                className="text-blue-600 hover:text-blue-700 font-semibold h-auto p-0"
-                onClick={() => setIsLogin(!isLogin)}
-              >
-                {isLogin ? 'Criar conta gratuita' : 'Fazer login'}
-              </Button>
-            </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="register-email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        className="pl-10"
+                        value={registerData.email}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password">Senha</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="register-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        className="pl-10 pr-10"
+                        value={registerData.password}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-green-600 hover:bg-green-700" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Criando conta..." : "Criar conta"}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
-        {/* Rodapé */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2024 Gestor. Transformando negócios em resultados.</p>
+        {/* Demo credentials */}
+        <div className="text-center">
+          <p className="text-sm text-gray-500 mb-2">Credenciais para teste:</p>
+          <div className="bg-gray-50 p-3 rounded-lg text-sm">
+            <p><strong>Email:</strong> admin@gestor.com</p>
+            <p><strong>Senha:</strong> admin123</p>
+          </div>
         </div>
       </div>
     </div>

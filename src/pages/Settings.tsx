@@ -32,6 +32,7 @@ import Header from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
 import DatabaseConnectionModal from '@/components/DatabaseConnectionModal';
 import { useDatabaseConnection } from '@/hooks/useDatabaseConnection';
+import UserManagement from '@/components/UserManagement';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("integrations");
@@ -102,7 +103,7 @@ const Settings = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col">
-        <Header user={user} />
+        <Header />
         
         <main className="flex-1 p-6">
           <div className="mb-6">
@@ -289,126 +290,7 @@ const Settings = () => {
 
             {/* Aba Usuários */}
             <TabsContent value="users" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Gestão de Usuários
-                      </CardTitle>
-                      <CardDescription>
-                        Gerencie usuários e suas permissões
-                      </CardDescription>
-                    </div>
-                    <Dialog open={isInviteUserOpen} onOpenChange={setIsInviteUserOpen}>
-                      <DialogTrigger asChild>
-                        <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Convidar Usuário
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Convidar Usuário</DialogTitle>
-                          <DialogDescription>
-                            Envie um convite para um novo usuário
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="user-name">Nome</Label>
-                            <Input
-                              id="user-name"
-                              value={newUser.name}
-                              onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
-                              placeholder="Nome completo"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="user-email">Email</Label>
-                            <Input
-                              id="user-email"
-                              type="email"
-                              value={newUser.email}
-                              onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                              placeholder="email@empresa.com"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="user-role">Função</Label>
-                            <Select value={newUser.role} onValueChange={(value) => setNewUser(prev => ({ ...prev, role: value }))}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Administrador</SelectItem>
-                                <SelectItem value="editor">Editor</SelectItem>
-                                <SelectItem value="viewer">Visualizador</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setIsInviteUserOpen(false)}>
-                              Cancelar
-                            </Button>
-                            <Button onClick={handleInviteUser}>
-                              Enviar Convite
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Função</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Último Acesso</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockUsers.map((user) => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Badge className={roleColors[user.role as keyof typeof roleColors]}>
-                              {roleLabels[user.role as keyof typeof roleLabels]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {user.active ? (
-                                <><Check className="h-4 w-4 text-green-500" /> Ativo</>
-                              ) : (
-                                <><X className="h-4 w-4 text-red-500" /> Inativo</>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>{user.lastLogin}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-3 w-3" />
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <UserManagement />
 
               <Card>
                 <CardHeader>
@@ -421,12 +303,34 @@ const Settings = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8 text-gray-500">
-                    <Lock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Configure permissões granulares</p>
-                    <Button variant="outline" className="mt-2">
-                      Configurar Permissões
-                    </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['admin', 'editor', 'viewer'].map((role) => (
+                      <Card key={role} className="p-4">
+                        <h4 className="font-medium mb-3 capitalize">{role}</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Dashboard</span>
+                            <span className="text-green-600">{role === 'admin' ? 'Full' : 'Read'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Clientes</span>
+                            <span className="text-green-600">{role === 'viewer' ? 'Read' : 'Write'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Vendas</span>
+                            <span className="text-green-600">{role === 'viewer' ? 'Read' : 'Write'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Relatórios</span>
+                            <span className="text-green-600">Read</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Configurações</span>
+                            <span className="text-red-600">{role === 'admin' ? 'Full' : 'None'}</span>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -453,7 +357,7 @@ const Settings = () => {
                   <div>
                     <Label htmlFor="logo">Logo da Empresa</Label>
                     <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                      <Globe className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <Globe className="h-12 w-12 mx-auto mb-4" />
                       <p className="text-sm text-gray-500">Clique para fazer upload do logo</p>
                     </div>
                   </div>
