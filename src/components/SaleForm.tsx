@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +29,7 @@ const SaleForm = ({ sale, onSave, onCancel }: SaleFormProps) => {
   const [formData, setFormData] = useState({
     clientName: '',
     value: 0,
-    status: 'Proposta' as const,
+    status: 'Proposta' as 'Proposta' | 'Negociação' | 'Fechado' | 'Perdido',
     product: '',
     date: new Date().toISOString().split('T')[0],
     salesPerson: '',

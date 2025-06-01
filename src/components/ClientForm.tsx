@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +33,7 @@ const ClientForm = ({ client, onSave, onCancel }: ClientFormProps) => {
     phone: '',
     company: '',
     address: '',
-    status: 'Lead' as const,
+    status: 'Lead' as 'Ativo' | 'Inativo' | 'Lead',
     tags: '',
     value: 0,
     lastContact: new Date().toISOString().split('T')[0]
