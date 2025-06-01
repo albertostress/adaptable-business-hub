@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
-  Settings as SettingsIcon, 
   Webhook, 
   Users, 
   Palette, 
@@ -25,23 +23,25 @@ import {
   Lock,
   Mail,
   Database as DatabaseIcon,
+  CheckCircle,
+  XCircle,
   Key
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
-import DatabaseFormModal from './settings/Database';
+import DatabaseConnectionModal from '@/components/DatabaseConnectionModal';
+import { useDatabaseConnection } from '@/hooks/useDatabaseConnection';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("integrations");
   const [isInviteUserOpen, setIsInviteUserOpen] = useState(false);
   const [isWebhookOpen, setIsWebhookOpen] = useState(false);
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'viewer' });
   const [newWebhook, setNewWebhook] = useState({ name: '', url: '', events: [] });
   const { toast } = useToast();
-  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
-  const [dbConnection, setDbConnection] = useState(null);
-  const [dbStatus, setDbStatus] = useState<'success' | 'error' | 'pending'>('pending');
+  const { status: dbStatus, saveConnection, clearConnection } = useDatabaseConnection();
 
   // Mock data
   const mockUsers = [
@@ -88,13 +88,13 @@ const Settings = () => {
     setNewWebhook({ name: '', url: '', events: [] });
   };
 
-  // Função para receber dados do formulário Database
-  function handleDbSave(connection, status) {
-    setDbConnection(connection);
-    setDbStatus(status);
-    setIsDbModalOpen(false);
-    // Opcional: localStorage.setItem('dbConnection', JSON.stringify(connection));
-  }
+  const handleDbConnectionSuccess = (connection: any) => {
+    saveConnection(connection, 'success');
+    toast({
+      title: "Banco de dados conectado!",
+      description: "Agora você pode adicionar clientes diretamente no PostgreSQL",
+    });
+  };
 
   const user = JSON.parse(localStorage.getItem('gestor_user') || '{}');
 
@@ -132,6 +132,69 @@ const Settings = () => {
 
             {/* Aba Integrações */}
             <TabsContent value="integrations" className="space-y-6">
+              {/* Seção PostgreSQL */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DatabaseIcon className="h-5 w-5" />
+                    Banco de Dados PostgreSQL
+                    {dbStatus.connected && <CheckCircle className="h-5 w-5 text-green-500" />}
+                    {dbStatus.error && <XCircle className="h-5 w-5 text-red-500" />}
+                  </CardTitle>
+                  <CardDescription>
+                    Configure a conexão com PostgreSQL para armazenar dados dos clientes
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {dbStatus.connected ? (
+                    <div className="flex items-center justify-between p-4 border rounded-lg bg-green-50">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-6 w-6 text-green-500" />
+                        <div>
+                          <h4 className="font-medium text-green-900">Conectado ao PostgreSQL</h4>
+                          <p className="text-sm text-green-700">
+                            {dbStatus.connection?.host}:{dbStatus.connection?.port}/{dbStatus.connection?.database}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setIsDbModalOpen(true)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={clearConnection}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Desconectar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <DatabaseIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-600 mb-4">
+                        {dbStatus.error ? 'Erro na conexão com o banco de dados' : 'Nenhuma conexão configurada'}
+                      </p>
+                      {dbStatus.error && (
+                        <p className="text-sm text-red-600 mb-4">{dbStatus.error}</p>
+                      )}
+                      <Button onClick={() => setIsDbModalOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Conectar PostgreSQL
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Seção Webhooks */}
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -219,38 +282,6 @@ const Settings = () => {
                         </div>
                       </div>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DatabaseIcon className="h-5 w-5" />
-                    Conexões de Banco de Dados
-                    {dbStatus === 'success' && <span style={{ color: 'green', marginLeft: 8 }}>● Ativa</span>}
-                    {dbStatus === 'error' && <span style={{ color: 'red', marginLeft: 8 }}>● Erro</span>}
-                    {dbStatus === 'pending' && <span style={{ color: 'gray', marginLeft: 8 }}>● Pendente</span>}
-                  </CardTitle>
-                  <CardDescription>
-                    Configure conexões com bancos de dados externos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-gray-500">
-                    <DatabaseIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>{dbConnection ? `Conexão ativa com ${dbConnection.host}` : 'Nenhuma conexão configurada'}</p>
-                    <Button variant="outline" className="mt-2" onClick={() => setIsDbModalOpen(true)}>
-                      Adicionar Conexão
-                    </Button>
-                    <Dialog open={isDbModalOpen} onOpenChange={setIsDbModalOpen}>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Adicionar Conexão de Banco de Dados</DialogTitle>
-                        </DialogHeader>
-                        <DatabaseFormModal onSave={handleDbSave} />
-                      </DialogContent>
-                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
@@ -554,6 +585,13 @@ const Settings = () => {
           </Tabs>
         </main>
       </div>
+
+      {/* Modal de Conexão de Banco de Dados */}
+      <DatabaseConnectionModal
+        isOpen={isDbModalOpen}
+        onClose={() => setIsDbModalOpen(false)}
+        onConnectionSuccess={handleDbConnectionSuccess}
+      />
     </div>
   );
 };
