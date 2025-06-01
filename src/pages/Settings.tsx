@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,12 +24,13 @@ import {
   Globe,
   Lock,
   Mail,
-  Database,
+  Database as DatabaseIcon,
   Key
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { useToast } from "@/hooks/use-toast";
+import DatabaseFormModal from './settings/Database';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("integrations");
@@ -39,6 +39,9 @@ const Settings = () => {
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'viewer' });
   const [newWebhook, setNewWebhook] = useState({ name: '', url: '', events: [] });
   const { toast } = useToast();
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [dbConnection, setDbConnection] = useState(null);
+  const [dbStatus, setDbStatus] = useState<'success' | 'error' | 'pending'>('pending');
 
   // Mock data
   const mockUsers = [
@@ -84,6 +87,14 @@ const Settings = () => {
     setIsWebhookOpen(false);
     setNewWebhook({ name: '', url: '', events: [] });
   };
+
+  // Função para receber dados do formulário Database
+  function handleDbSave(connection, status) {
+    setDbConnection(connection);
+    setDbStatus(status);
+    setIsDbModalOpen(false);
+    // Opcional: localStorage.setItem('dbConnection', JSON.stringify(connection));
+  }
 
   const user = JSON.parse(localStorage.getItem('gestor_user') || '{}');
 
@@ -215,8 +226,11 @@ const Settings = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Database className="h-5 w-5" />
+                    <DatabaseIcon className="h-5 w-5" />
                     Conexões de Banco de Dados
+                    {dbStatus === 'success' && <span style={{ color: 'green', marginLeft: 8 }}>● Ativa</span>}
+                    {dbStatus === 'error' && <span style={{ color: 'red', marginLeft: 8 }}>● Erro</span>}
+                    {dbStatus === 'pending' && <span style={{ color: 'gray', marginLeft: 8 }}>● Pendente</span>}
                   </CardTitle>
                   <CardDescription>
                     Configure conexões com bancos de dados externos
@@ -224,11 +238,19 @@ const Settings = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-center py-8 text-gray-500">
-                    <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Nenhuma conexão configurada</p>
-                    <Button variant="outline" className="mt-2">
+                    <DatabaseIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>{dbConnection ? `Conexão ativa com ${dbConnection.host}` : 'Nenhuma conexão configurada'}</p>
+                    <Button variant="outline" className="mt-2" onClick={() => setIsDbModalOpen(true)}>
                       Adicionar Conexão
                     </Button>
+                    <Dialog open={isDbModalOpen} onOpenChange={setIsDbModalOpen}>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Adicionar Conexão de Banco de Dados</DialogTitle>
+                        </DialogHeader>
+                        <DatabaseFormModal onSave={handleDbSave} />
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </CardContent>
               </Card>
